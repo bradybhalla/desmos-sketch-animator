@@ -1,5 +1,4 @@
-import $ from "jquery";
-import P5 from "p5";
+import * as utils from "./utils";
 import { DesmosFourierSeries } from "./desmosEquations";
 
 import "./style.css";
@@ -19,7 +18,7 @@ console.log(FS.getDesmosList(30));
 // define vector type
 type vec = { x: number, y: number; };
 
-
+/*
 const sketch = (p5: P5) => {
 
   // size of sections of sketch
@@ -194,7 +193,102 @@ const sketch = (p5: P5) => {
   };
 
 };
+*/
 
-$(() => {
-  new P5(sketch);
-});
+abstract class Sketch {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    this.ctx = this.canvas.getContext("2d")!;
+  }
+
+  /**
+   * Run once for initialization
+   */
+  abstract setup(): void;
+
+  /**
+   * Draws sketch, run repeatedly
+   */
+  abstract draw(): void;
+
+  /**
+   * Update sketch, run repeatedly
+   */
+  abstract update(): void;
+
+  /**
+   * Creates event listeners for user input
+   */
+  abstract createEventListeners(): void;
+
+  /**
+   * Call this method to run the sketch
+   */
+  run() {
+    this.setup();
+    this.createEventListeners();
+    const drawFunc = ()=>{
+      requestAnimationFrame(drawFunc);
+      this.update();
+      this.draw();
+    }
+    drawFunc();
+  }
+}
+
+
+class MainSketch extends Sketch {
+  x: number = 0;
+  ball: vec = {x:0, y:0};
+
+  static rgbToHex(r: number, g: number, b: number): string {
+    r = Math.floor(r < 0 ? 0 : (r > 255 ? 255 : r));
+    g = Math.floor(g < 0 ? 0 : (g > 255 ? 255 : g));
+    b = Math.floor(b < 0 ? 0 : (b > 255 ? 255 : b));
+
+    return "#" + r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + b.toString(16).padStart(2, "0");
+  }
+
+  setup() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  draw() {
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+
+    this.ctx.fillStyle = MainSketch.rgbToHex(255, 255, 255);
+    this.ctx.fillRect(0, 0, width, height);
+
+    this.ctx.fillStyle = MainSketch.rgbToHex(this.x, 0, 0);
+    this.ctx.fillRect(width / 4, height / 4, width / 2, height / 2);
+
+
+    this.ctx.fillStyle = MainSketch.rgbToHex(0, 0, 255);
+    this.ctx.beginPath();
+    this.ctx.ellipse(this.ball.x,this.ball.y,30,30,0,0,utils.TWO_PI);
+    this.ctx.fill();
+  }
+
+  update(){
+    this.ball.x = (this.ball.x + 6)%this.canvas.width;
+    this.ball.y = (this.ball.y + 3)%this.canvas.height;
+  }
+
+  createEventListeners() {
+
+    addEventListener("resize", () => {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+      this.x += 1;
+      this.draw();
+    });
+
+  }
+}
+
+(new MainSketch(<HTMLCanvasElement>document.getElementById("sketch"))).run();

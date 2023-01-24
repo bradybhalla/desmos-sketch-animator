@@ -3,197 +3,25 @@ import { DesmosFourierSeries } from "./desmosEquations";
 
 import "./style.css";
 
-// compute fourier series
-const X = [];
-const Y = [];
-for (let i = 0; i < 2 * Math.PI; i += 0.001) {
-  X.push(20 * Math.cos(i) * (Math.cos(i / 2)) ** 2 + 20 + Math.sin(i));
-  Y.push(20 * Math.sin(i) * (Math.cos(i / 2)) ** 2 + 20);
+function rgbToHex(r: number, g: number, b: number): string {
+  r = utils.floor(r < 0 ? 0 : (r > 255 ? 255 : r));
+  g = utils.floor(g < 0 ? 0 : (g > 255 ? 255 : g));
+  b = utils.floor(b < 0 ? 0 : (b > 255 ? 255 : b));
+
+  return "#" + r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + b.toString(16).padStart(2, "0");
 }
-const FS = new DesmosFourierSeries(X, Y);
-console.log(FS.getDesmosExpanded(30));
-console.log(FS.getDesmosList(30));
+// colors
+namespace Colors {
+  export const Background = rgbToHex(170, 170, 170);
+  export const Black = rgbToHex(0, 0, 0);
+  export const LightGray = rgbToHex(100, 100, 100);
+  export const DarkGray = rgbToHex(70, 70, 70);
+}
 
 
 // define vector type
 type vec = { x: number, y: number; };
 
-/*
-const sketch = (p5: P5) => {
-
-  // size of sections of sketch
-  let dim: vec;
-  let mainPos: vec, mainSize: vec;
-  
-  // location in coordinate plane
-  let origin: vec;
-  let scale: number;
-
-  // draw fourier series
-  const drawFS = (fs: DesmosFourierSeries, terms: number = -1) => {
-    const { x, y } = fs.getFunc(terms);
-    let oldPos: vec = toPos({ x: x(0), y: y(0) });
-    for (let t = 0.05; t < 2 * p5.PI; t += 0.05) {
-      const pos: vec = toPos({ x: x(t), y: y(t) });
-      p5.line(oldPos.x, oldPos.y, pos.x, pos.y);
-
-      oldPos = pos;
-    }
-    const pos: vec = toPos({ x: x(0), y: y(0) });
-    p5.line(oldPos.x, oldPos.y, pos.x, pos.y);
-  };
-
-  // to coordinates (from screen position)
-  const toCoords = (pos: vec): vec => {
-    return {
-      x: origin.x + scale * (pos.x - mainPos.x),
-      y: origin.y + scale * (mainPos.y + mainSize.y - pos.y)
-    };
-  };
-
-  // to screen position (from coordinates)
-  const toPos = (coords: vec): vec => {
-    return {
-      x: (coords.x - origin.x) / scale + mainPos.x,
-      y: mainPos.y + mainSize.y - (coords.y - origin.y) / scale
-    };
-  };
-
-  // update size of main frame
-  const updateSize = () => {
-    dim = { x: p5.width, y: p5.height };
-    mainPos = { x: 50, y: 50 };
-    mainSize = { x: dim.x - 100, y: dim.y - 100 };
-  };
-
-
-  p5.setup = () => {
-    const canvas = p5.createCanvas(window.innerWidth, window.innerHeight);
-    canvas.parent("app");
-
-    p5.frameRate(30);
-
-    updateSize();
-
-    scale = 50 / Math.min(mainSize.x, mainSize.y);
-    origin = { x: 0, y: 0 };
-
-    p5.noCursor();
-  };
-
-  p5.draw = () => {
-
-    updateSize();
-
-    p5.background(170);
-
-    // grid
-    const maxCoords: vec = toCoords({ x: mainPos.x + mainSize.x, y: mainPos.y });
-    const gridSpacing: number = p5.min(p5.pow(10, p5.round(p5.log(p5.min(maxCoords.x - origin.x, maxCoords.y - origin.y) / 10) / p5.log(10), 0)), 100);
-    const roundPlaces: number = p5.max(0, -p5.round(p5.log(gridSpacing) / p5.log(10)));
-    let currGrid: vec = { x: origin.x - origin.x % gridSpacing, y: origin.y - origin.y % gridSpacing };
-    let eqPos: vec = toPos(currGrid);
-
-    p5.fill(100);
-    p5.textSize(14);
-    while (eqPos.x <= mainPos.x + mainSize.x || eqPos.y >= mainPos.y) {
-      
-      if (eqPos.x >= mainPos.x && eqPos.x < mainPos.x + mainSize.x) {
-        if (p5.round(currGrid.x, roundPlaces) == 0) {
-          p5.strokeWeight(2);
-          p5.stroke(0);
-        } else {
-          p5.strokeWeight(1);
-          p5.stroke(100);
-        }
-        p5.line(eqPos.x, mainPos.y + mainSize.y, eqPos.x, mainPos.y);
-
-        p5.noStroke();
-        p5.text(p5.round(currGrid.x, roundPlaces), eqPos.x + 5, mainPos.y + mainSize.y - 5);
-      }
-
-      if (eqPos.y > mainPos.y && eqPos.y <= mainPos.y + mainSize.y) {
-        p5.stroke(100);
-        if (p5.round(currGrid.y, roundPlaces) == 0) {
-          p5.strokeWeight(2);
-          p5.stroke(0);
-        } else {
-          p5.strokeWeight(1);
-          p5.stroke(100);
-        }
-        p5.line(mainPos.x, eqPos.y, mainPos.x + mainSize.x, eqPos.y);
-
-        p5.noStroke();
-        p5.text(p5.round(currGrid.y, roundPlaces), mainPos.y + 5, eqPos.y - 5);
-      }
-      
-      
-      currGrid = { x: currGrid.x + gridSpacing, y: currGrid.y + gridSpacing };
-      eqPos = toPos(currGrid);
-    }
-
-
-    // cursor
-    p5.strokeWeight(2);
-    p5.stroke(50);
-    p5.line(p5.mouseX - 5, p5.mouseY, p5.mouseX + 5, p5.mouseY);
-    p5.line(p5.mouseX, p5.mouseY - 5, p5.mouseX, p5.mouseY + 5);
-
-    p5.textSize(14);
-    p5.fill(100);
-    p5.noStroke();
-    const coords: vec = toCoords({ x: p5.mouseX, y: p5.mouseY });
-    p5.text(p5.round(coords.x, roundPlaces) + ", " + p5.round(coords.y, roundPlaces), p5.mouseX + 5, p5.mouseY - 5);
-
-    // draw Fourier Series
-    p5.stroke(0);
-    p5.strokeWeight(5);
-    drawFS(FS);
-
-  };
-
-  p5.mousePressed = () => {
-    const m: vec = { x: p5.mouseX - mainPos.x, y: p5.mouseY - mainPos.y };
-    if (
-      m.x >= 0 &&
-      m.x < mainSize.x &&
-      m.y >= 0 &&
-      m.y < mainSize.y
-    ) {
-      console.log(m);
-    }
-  };
-
-  p5.mouseDragged = (event: { movementX: number, movementY: number; }) => {
-    origin.x -= event.movementX * scale;
-    origin.y += event.movementY * scale;
-  };
-
-  p5.mouseWheel = (event: { delta: number; }) => {
-    const origMouseCoords: vec = toCoords({ x: p5.mouseX, y: p5.mouseY });
-    let shift: number = event.delta;
-    if (p5.abs(shift) > 20) {
-      shift *= 20 / p5.abs(shift);
-    }
-    if (shift < 0 && scale < 0.001) {
-      return;
-    } else if (shift > 0 && scale > 3) {
-      return;
-    }
-    const factor: number = p5.pow(1.002, shift);
-    scale *= factor;
-    const finalMouseCoords: vec = toCoords({ x: p5.mouseX, y: p5.mouseY });
-    let originShift: vec = { x: origMouseCoords.x - finalMouseCoords.x, y: origMouseCoords.y - finalMouseCoords.y };
-    origin.x += originShift.x;
-    origin.y += originShift.y;
-  };
-
-  p5.windowResized = () => {
-    p5.resizeCanvas(window.innerWidth, window.innerHeight);
-  };
-
-};
-*/
 
 abstract class Sketch {
   canvas: HTMLCanvasElement;
@@ -230,53 +58,206 @@ abstract class Sketch {
   run() {
     this.setup();
     this.createEventListeners();
-    const drawFunc = ()=>{
+    const drawFunc = () => {
       requestAnimationFrame(drawFunc);
       this.update();
       this.draw();
-    }
+    };
     drawFunc();
   }
 }
 
 
 class MainSketch extends Sketch {
-  x: number = 0;
-  ball: vec = {x:0, y:0};
+  // size of sections of sketch
+  dim: vec = { x: 0, y: 0 };
+  mainPos: vec = { x: 0, y: 0 };
+  mainSize: vec = { x: 0, y: 0 };
 
-  static rgbToHex(r: number, g: number, b: number): string {
-    r = Math.floor(r < 0 ? 0 : (r > 255 ? 255 : r));
-    g = Math.floor(g < 0 ? 0 : (g > 255 ? 255 : g));
-    b = Math.floor(b < 0 ? 0 : (b > 255 ? 255 : b));
+  // location in coordinate plane
+  origin: vec = { x: 0, y: 0 };
+  scale: number = 1;
 
-    return "#" + r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + b.toString(16).padStart(2, "0");
+  // mouse information
+  mouseIsDown: boolean = false;
+  mouse: vec = { x: 0, y: 0 };
+
+  drawing: boolean = false;
+
+  // Fourier Series information
+  X: number[] = [];
+  Y: number[] = [];
+  FS: DesmosFourierSeries | null = null;
+  addCoordsToData(coords: vec, xData: number[], yData: number[]) {
+    if (xData.length == 0) {
+      xData.push(coords.x);
+      yData.push(coords.y);
+    } else {
+      const last = { x: xData[xData.length - 1], y: yData[xData.length - 1] };
+      const dist = utils.sqrt(utils.pow(coords.x - last.x, 2) + utils.pow(coords.y - last.y, 2));
+      for (let a: number = 1; a <= dist + 0.2; a++) {
+        xData.push(last.x + (coords.x - last.x) * a / dist);
+        yData.push(last.y + (coords.y - last.y) * a / dist);
+      }
+      //xData.push(coords.x);
+      //yData.push(coords.y);
+    }
+  }
+  copyDesmos() {
+    if (this.FS != null) {
+      const desmosFormula = this.FS.getDesmosList(30);//this.FS.getDesmosExpanded(30);
+      window.navigator.clipboard.writeText(desmosFormula);
+      setTimeout(alert, 100, "copied!");
+    }
+  }
+
+
+  updateSize() {
+    this.dim = { x: this.canvas.width, y: this.canvas.height };
+    this.mainPos = { x: 50, y: 50 };
+    this.mainSize = { x: this.dim.x - 100, y: this.dim.y - 100 };
+  }
+
+  // to coordinates (from screen position)
+  toCoords(pos: vec): vec {
+    return {
+      x: this.origin.x + this.scale * (pos.x - this.mainPos.x),
+      y: this.origin.y + this.scale * (this.mainPos.y + this.mainSize.y - pos.y)
+    };
+  }
+
+  // to screen position (from coordinates)
+  toPos(coords: vec): vec {
+    return {
+      x: (coords.x - this.origin.x) / this.scale + this.mainPos.x,
+      y: this.mainPos.y + this.mainSize.y - (coords.y - this.origin.y) / this.scale
+    };
+  }
+
+  // draw line
+  line(x1: number, y1: number, x2: number, y2: number) {
+    this.ctx.moveTo(x1, y1);
+    this.ctx.lineTo(x2, y2);
   }
 
   setup() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+
+    this.updateSize();
+    this.scale = 50 / utils.min(this.mainSize.x, this.mainSize.y);
+
   }
 
   draw() {
-    const width = this.canvas.width;
-    const height = this.canvas.height;
+    // draw background
+    this.ctx.fillStyle = Colors.Background;
+    this.ctx.fillRect(0, 0, this.dim.x, this.dim.y);
 
-    this.ctx.fillStyle = MainSketch.rgbToHex(255, 255, 255);
-    this.ctx.fillRect(0, 0, width, height);
+    // grid
+    const maxCoords: vec = this.toCoords({ x: this.mainPos.x + this.mainSize.x, y: this.mainPos.y });
+    const gridSpacing: number = utils.min(utils.pow(10, utils.round(utils.log(utils.min(maxCoords.x - this.origin.x, maxCoords.y - this.origin.y) / 10) / utils.log(10), 0)), 100);
+    const roundPlaces: number = utils.max(0, -utils.round(utils.log(gridSpacing) / utils.log(10), 0));
+    let currGrid: vec = { x: this.origin.x - this.origin.x % gridSpacing, y: this.origin.y - this.origin.y % gridSpacing };
+    let eqPos: vec = this.toPos(currGrid);
 
-    this.ctx.fillStyle = MainSketch.rgbToHex(this.x, 0, 0);
-    this.ctx.fillRect(width / 4, height / 4, width / 2, height / 2);
+    this.ctx.fillStyle = Colors.LightGray;
+    this.ctx.font = "14px Arial";
 
+    while (eqPos.x <= this.mainPos.x + this.mainSize.x || eqPos.y >= this.mainPos.y) {
+      
+      if (eqPos.x >= this.mainPos.x && eqPos.x < this.mainPos.x + this.mainSize.x) {
+        if (utils.round(currGrid.x, roundPlaces) == 0) {
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeStyle = Colors.Black;
+        } else {
+          this.ctx.lineWidth = 1;
+          this.ctx.strokeStyle = Colors.LightGray;
+        }
+        this.ctx.beginPath();
+        this.line(eqPos.x, this.mainPos.y + this.mainSize.y, eqPos.x, this.mainPos.y);
+        this.ctx.stroke();
 
-    this.ctx.fillStyle = MainSketch.rgbToHex(0, 0, 255);
+        this.ctx.fillText(utils.round(currGrid.x, roundPlaces).toString(), eqPos.x + 5, this.mainPos.y + this.mainSize.y - 5);
+      }
+
+      
+      if (eqPos.y > this.mainPos.y && eqPos.y <= this.mainPos.y + this.mainSize.y) {
+        if (utils.round(currGrid.y, roundPlaces) == 0) {
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeStyle = Colors.Black;
+        } else {
+          this.ctx.lineWidth = 1;
+          this.ctx.strokeStyle = Colors.LightGray;
+        }
+        this.ctx.beginPath();
+        this.line(this.mainPos.x, eqPos.y, this.mainPos.x + this.mainSize.x, eqPos.y);
+        this.ctx.stroke();
+
+        this.ctx.fillText(utils.round(currGrid.y, roundPlaces).toString(), this.mainPos.y + 5, eqPos.y - 5);
+      }
+      
+      
+      currGrid = { x: currGrid.x + gridSpacing, y: currGrid.y + gridSpacing };
+      eqPos = this.toPos(currGrid);
+    }
+
+    // cursor
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeStyle = Colors.DarkGray;
     this.ctx.beginPath();
-    this.ctx.ellipse(this.ball.x,this.ball.y,30,30,0,0,utils.TWO_PI);
-    this.ctx.fill();
+    this.line(this.mouse.x - 5, this.mouse.y, this.mouse.x + 5, this.mouse.y);
+    this.line(this.mouse.x, this.mouse.y - 5, this.mouse.x, this.mouse.y + 5);
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = Colors.DarkGray;
+    const coords: vec = this.toCoords(this.mouse);
+    this.ctx.fillText(utils.round(coords.x, roundPlaces + 1) + ", " + utils.round(coords.y, roundPlaces + 1), this.mouse.x + 5, this.mouse.y - 5);
+
+
+    // draw fs
+    if (this.FS != null) {
+      const func = this.FS.getFunc(30);
+
+      this.ctx.strokeStyle = Colors.LightGray;
+      this.ctx.lineWidth = 2;
+
+      this.ctx.beginPath();
+      const pos = this.toPos({ x: func.x(0), y: func.y(0) });
+      this.ctx.moveTo(pos.x, pos.y);
+      for (let t: number = 0; t < utils.TWO_PI; t += 0.01) {
+        const pos = this.toPos({ x: func.x(t), y: func.y(t) });
+        this.ctx.lineTo(pos.x, pos.y);
+      }
+      this.ctx.closePath();
+      this.ctx.stroke();
+    }
+
+
+    // draw current path
+    this.ctx.strokeStyle = Colors.LightGray;
+    this.ctx.lineWidth = 2;
+
+    this.ctx.beginPath();
+    const pos = this.toPos({ x: this.X[0], y: this.Y[0] });
+    this.ctx.moveTo(pos.x, pos.y);
+    for (let i: number = 0; i < this.X.length; i++) {
+      const pos = this.toPos({ x: this.X[i], y: this.Y[i] });
+      this.ctx.lineTo(pos.x, pos.y);
+    }
+    this.ctx.stroke();
+
   }
 
-  update(){
-    this.ball.x = (this.ball.x + 6)%this.canvas.width;
-    this.ball.y = (this.ball.y + 3)%this.canvas.height;
+  update() {
+    this.updateSize();
+
+    if (this.X.length > 50) {
+      const X = [...this.X];
+      const Y = [...this.Y];
+      this.addCoordsToData({ x: X[0], y: Y[0] }, X, Y);
+      this.FS = new DesmosFourierSeries(X, Y);
+    }
   }
 
   createEventListeners() {
@@ -284,8 +265,72 @@ class MainSketch extends Sketch {
     addEventListener("resize", () => {
       this.canvas.width = window.innerWidth;
       this.canvas.height = window.innerHeight;
-      this.x += 1;
       this.draw();
+    });
+
+    addEventListener("wheel", (event: WheelEvent) => {
+      const origMouseCoords: vec = this.toCoords({ x: event.clientX, y: event.clientY });
+      let shift: number = utils.abs(event.deltaX) > utils.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (utils.abs(shift) > 20) {
+        shift *= 20 / utils.abs(shift);
+      }
+      if (shift < 0 && this.scale < 0.001) {
+        return;
+      } else if (shift > 0 && this.scale > 3) {
+        return;
+      }
+      const factor: number = utils.pow(1.002, shift);
+      this.scale *= factor;
+      const finalMouseCoords: vec = this.toCoords({ x: event.clientX, y: event.clientY });
+      let originShift: vec = { x: origMouseCoords.x - finalMouseCoords.x, y: origMouseCoords.y - finalMouseCoords.y };
+      this.origin.x += originShift.x;
+      this.origin.y += originShift.y;
+    });
+
+    addEventListener("mousedown", () => {
+      this.mouseIsDown = true;
+    });
+
+    addEventListener("mousemove", (event) => {
+      this.mouse.x = event.clientX;
+      this.mouse.y = event.clientY;
+      if (this.mouseIsDown) {
+        this.origin.x -= event.movementX * this.scale;
+        this.origin.y += event.movementY * this.scale;
+      } else if (this.drawing) {
+        this.addCoordsToData(this.toCoords({ x: this.mouse.x, y: this.mouse.y }), this.X, this.Y);
+      }
+    });
+
+    addEventListener("mouseup", () => {
+      this.mouseIsDown = false;
+    });
+
+    addEventListener("keypress", (event) => {
+      switch (event.key) {
+        case "a":
+          this.addCoordsToData(this.toCoords({ x: this.mouse.x, y: this.mouse.y }), this.X, this.Y);
+          break;
+        case "e":
+          this.copyDesmos();
+          break;
+      }
+    });
+
+    addEventListener("keydown", (event) => {
+      switch (event.key) {
+        case "d":
+          this.drawing = true;
+          break;
+      }
+    });
+
+    addEventListener("keyup", (event) => {
+      switch (event.key) {
+        case "d":
+          this.drawing = false;
+          break;
+      }
     });
 
   }

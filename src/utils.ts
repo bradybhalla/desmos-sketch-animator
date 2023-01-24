@@ -6,6 +6,14 @@ export const sin = Math.sin;
 export const sqrt = Math.sqrt;
 export const atan2 = Math.atan2;
 
+export const abs = Math.abs;
+export const floor = Math.floor;
+export const pow = Math.pow;
+export const log = Math.log;
+export const min = Math.min;
+export const max = Math.max;
+
+
 /**
  * Calculates a%n with a positive result
  */
@@ -16,6 +24,6 @@ export const mod = (a: number, n: number): number => {
 /**
  * Rounds to the nearest 1/10000
  */
-export const round = (x: number): number => {
-  return Math.round(x * 10000) / 10000;
+export const round = (x: number, places: number = 4): number => {
+  return Math.round(x * Math.pow(10, places)) / Math.pow(10, places);
 };

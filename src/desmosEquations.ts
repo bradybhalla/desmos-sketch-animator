@@ -40,7 +40,7 @@ export class DesmosFourierSeries extends FourierSeries {
       for (let i = 0; i < (terms == -1 ? this.n : terms); i++) {
         const a: number = coeffs.cos[i];
         const b: number = coeffs.sin[i];
-        result.push(`${utils.round(utils.sqrt(a * a + b * b))}\\cos\\left(${i + 1}t+${-utils.round(utils.atan2(b, a))}\\right)`);
+        result.push(`${utils.round(utils.sqrt(a * a + b * b))}\\cos\\left(2\\pi\\cdot${i + 1}t+${-utils.round(utils.atan2(b, a))}\\right)`);
       }
       return result.join("+");
     };

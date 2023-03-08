@@ -84,6 +84,10 @@ class MainSketch extends Sketch {
 
   drawing: boolean = false;
 
+  // old Drawings
+  oldFSFuncs: { x: (t: number) => number, y: (t: number) => number; }[] = [];
+  oldFSDesmos: string[] = [];
+
   // Fourier Series information
   X: number[] = [];
   Y: number[] = [];
@@ -95,7 +99,7 @@ class MainSketch extends Sketch {
     } else {
       const last = { x: xData[xData.length - 1], y: yData[xData.length - 1] };
       const dist = utils.sqrt(utils.pow(coords.x - last.x, 2) + utils.pow(coords.y - last.y, 2));
-      for (let a: number = 1; a <= dist + 0.2; a++) {
+      for (let a: number = 0.5; a <= dist; a+=0.5) {
         xData.push(last.x + (coords.x - last.x) * a / dist);
         yData.push(last.y + (coords.y - last.y) * a / dist);
       }
@@ -105,8 +109,16 @@ class MainSketch extends Sketch {
   }
   copyDesmos() {
     if (this.FS != null) {
-      const desmosFormula = this.FS.getDesmosList(30);//this.FS.getDesmosExpanded(30);
+      const desmosFormula = this.FS.getDesmosExpanded(30);//this.FS.getDesmosList(30);
       window.navigator.clipboard.writeText(desmosFormula);
+      setTimeout(alert, 100, "copied!");
+    }
+  }
+  copyAllDesmos() {
+    let ret: string = this.oldFSDesmos.join("\n");
+    if (this.FS != null) {
+      ret += "\n" + this.FS.getDesmosExpanded(30);
+      window.navigator.clipboard.writeText(ret);
       setTimeout(alert, 100, "copied!");
     }
   }
@@ -214,11 +226,8 @@ class MainSketch extends Sketch {
     const coords: vec = this.toCoords(this.mouse);
     this.ctx.fillText(utils.round(coords.x, roundPlaces + 1) + ", " + utils.round(coords.y, roundPlaces + 1), this.mouse.x + 5, this.mouse.y - 5);
 
-
-    // draw fs
-    if (this.FS != null) {
-      const func = this.FS.getFunc(30);
-
+    // draw old fs
+    this.oldFSFuncs.forEach((func)=>{
       this.ctx.strokeStyle = Colors.LightGray;
       this.ctx.lineWidth = 2;
 
@@ -231,8 +240,7 @@ class MainSketch extends Sketch {
       }
       this.ctx.closePath();
       this.ctx.stroke();
-    }
-
+    });
 
     // draw current path
     this.ctx.strokeStyle = Colors.LightGray;
@@ -246,6 +254,25 @@ class MainSketch extends Sketch {
       this.ctx.lineTo(pos.x, pos.y);
     }
     this.ctx.stroke();
+
+    // draw fs
+    if (this.FS != null) {
+      const func = this.FS.getFunc(30);
+
+      this.ctx.strokeStyle = Colors.DarkGray;
+      this.ctx.lineWidth = 2;
+
+      this.ctx.beginPath();
+      const pos = this.toPos({ x: func.x(0), y: func.y(0) });
+      this.ctx.moveTo(pos.x, pos.y);
+      for (let t: number = 0; t < utils.TWO_PI; t += 0.01) {
+        const pos = this.toPos({ x: func.x(t), y: func.y(t) });
+        this.ctx.lineTo(pos.x, pos.y);
+      }
+      this.ctx.closePath();
+      this.ctx.stroke();
+    }
+
 
   }
 
@@ -314,6 +341,19 @@ class MainSketch extends Sketch {
         case "e":
           this.copyDesmos();
           break;
+        case "E":
+          this.copyAllDesmos();
+          break;
+        case "n":
+          if (this.FS != null){
+            this.oldFSFuncs.push(this.FS.getFunc(30));
+            this.oldFSDesmos.push(this.FS.getDesmosExpanded(30));
+            this.FS = null;
+            this.X = [];
+            this.Y = [];
+          }
+          break;
+
       }
     });
 
